@@ -9,4 +9,27 @@
         <item name="android:windowTitleSize">30dip</item>
         <item name="android:navigationBarColor">@color/colorPrimary</item>
     </style>
+
+    <style name="popupAnimation" parent="android:Animation">
+        <item name="android:windowEnterAnimation">@anim/pop_in</item>
+        <item name="android:windowExitAnimation">@anim/pop_out</item>
+    </style>
+
+
+    <style name="Dialog_Transparent_Theme" parent="android:Theme.Dialog">
+        <item name="android:windowFrame">@null</item>
+        <!-- 边框 -->
+        <item name="android:windowIsFloating">true</item>
+        <!-- 是否浮现在activity之上 -->
+        <item name="android:windowIsTranslucent">false</item>
+        <!-- 半透明 -->
+        <item name="android:windowNoTitle">true</item>
+        <!-- 无标题 -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- 背景透明 -->
+        <item name="android:backgroundDimEnabled">true</item>
+        <!-- activity变暗 -->
+        <item name="android:windowContentOverlay">@null</item>
+        <!-- 除去背景色 -->
+    </style>
 </resources>

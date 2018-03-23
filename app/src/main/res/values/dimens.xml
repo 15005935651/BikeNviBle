@@ -3,7 +3,8 @@
     <dimen name="activity_horizontal_margin">5dp</dimen>
     <dimen name="activity_vertical_margin">5dp</dimen>
     <dimen name="searchEdittextHeight">35dp</dimen>
-    <dimen name="search_top_margin">5dp</dimen>
+    <dimen name="search_top_margin">0dp</dimen>
     <dimen name="design_navigation_separator_vertical_padding">0dp</dimen>
+    <dimen name="search_bottom">8dp</dimen>
     <dimen name="divider_padding">0.2dip</dimen>
 </resources>

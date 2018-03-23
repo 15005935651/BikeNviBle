@@ -5,13 +5,17 @@ import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.view.MenuItem;
+import android.widget.Toast;
 
+import com.example.acer.control_class.DialogUtil;
+import com.example.acer.control_class.OnItemSelectedListener;
 
 public class MainActivity extends AppCompatActivity {
-
+    int mWidth;
     SearchView searchView;
-
+    private String[] items = {"福州大学旗山校区图书馆", "开始骑行", "预计花费24分钟"};
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -73,9 +77,34 @@ public class MainActivity extends AppCompatActivity {
         HomeFragment  f1 = new HomeFragment();
         MfragmentTransaction.replace(R.id.message,f1);
         MfragmentTransaction.commit();
-
-
+        initData();
+        showDialog();
     }
+
+
+    private void initData() {
+        DisplayMetrics dm = new DisplayMetrics();
+        this.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        mWidth = dm.widthPixels;
+    }
+
+
+    private void showDialog() {
+
+        DialogUtil.showItemSelectDialog(MainActivity.this, mWidth
+                , onIllegalListener
+                , "福州大学旗山校区图书馆"
+                , "开始骑行"
+                , "预计花费24分钟"
+                );//可填添加任意多个Item呦
+    }
+
+    private OnItemSelectedListener onIllegalListener = new OnItemSelectedListener() {
+        @Override
+        public void getSelectedItem(String content) {
+            Toast.makeText(MainActivity.this, content, Toast.LENGTH_SHORT).show();
+        }
+    };
 
 
 
