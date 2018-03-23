@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <group android:id="@+id/grp1" android:checkableBehavior="single" >
+        <item
+            android:id="@+id/navigation_item_1"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="转到ofo" />
+    </group>
+
+    <group android:id="@+id/grp2" android:checkableBehavior="single" >
+        <item
+            android:id="@+id/navigation_item_2"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="转到摩拜单车" />
+    </group>
+
+    <group android:id="@+id/grp3" android:checkableBehavior="single" >
+        <item
+            android:id="@+id/navigation_item_3"
+            android:icon="@drawable/ic_menu_share"
+            android:title="分享" />
+    </group>
+
+    <group android:id="@+id/grp4" android:checkableBehavior="single" >
+        <item
+            android:id="@+id/navigation_item_4"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="关于我们" />
+    </group>
+
+</menu>

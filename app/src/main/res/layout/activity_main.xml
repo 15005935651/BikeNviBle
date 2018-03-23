@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorPrimary"
+    tools:context="com.example.acer.bikenvible.MainActivity">
+
+
+<TextView
+    android:layout_width="match_parent"
+    android:layout_height="30dp"
+    android:background="@color/colorPrimary"
+    android:text="@string/app_name"
+    android:textSize="20sp"
+    android:layout_gravity="center"
+    android:gravity="center"
+    android:textColor="@color/colorText"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/divider_padding"
+        android:background="#4B4B4B"/>
+
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+
+        <android.support.v7.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+
+
+
+            <com.example.acer.bikenvible.SearchView
+                android:id="@+id/search"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:background="@drawable/search_edittext_shape"
+                android:textSize="17sp"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:layout_marginTop="@dimen/search_top_margin"
+                android:layout_marginBottom="@dimen/activity_horizontal_margin"
+                android:imeOptions="actionSearch"
+                android:cursorVisible="false"
+                />
+
+
+
+
+        <FrameLayout
+            android:id="@+id/message"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF"
+            android:text="@string/title_home">
+
+        </FrameLayout>
+
+        </android.support.v7.widget.LinearLayoutCompat>
+
+    </FrameLayout>
+
+    <android.support.design.widget.BottomNavigationView
+        android:id="@+id/navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="?android:attr/windowBackground"
+        app:menu="@menu/navigation" />
+
+</LinearLayout>
