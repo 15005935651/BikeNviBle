@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v7.widget.AppCompatAutoCompleteTextView;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,17 +24,23 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.search.core.CityInfo;
+import com.baidu.mapapi.search.core.PoiInfo;
 import com.baidu.mapapi.search.core.SearchResult;
-import com.baidu.mapapi.search.geocode.GeoCodeOption;
-import com.baidu.mapapi.search.geocode.GeoCodeResult;
-import com.baidu.mapapi.search.geocode.GeoCoder;
-import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
-import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
+import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
+import com.baidu.mapapi.search.poi.PoiDetailResult;
+import com.baidu.mapapi.search.poi.PoiDetailSearchOption;
+import com.baidu.mapapi.search.poi.PoiIndoorResult;
+import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
+import com.baidu.mapapi.search.poi.PoiResult;
 import com.baidu.mapapi.search.poi.PoiSearch;
+import com.baidu.mapapi.search.poi.PoiSortType;
 import com.baidu.mapapi.search.sug.OnGetSuggestionResultListener;
 import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
+import com.example.acer.control_class.DialogUtil;
+import com.example.acer.control_class.OnItemSelectedListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -43,18 +50,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
+
 /**
  * Created by acer on 2018/3/22.
  */
 
-public class HomeFragment extends Fragment implements OnGetGeoCoderResultListener,
-        OnGetSuggestionResultListener {
+public class HomeFragment extends Fragment implements OnGetPoiSearchResultListener, OnGetSuggestionResultListener {
     private MapView mMapView;
     //百度地图数据
     private LocationClient mLocationClient;
     private MyLocationListener mLocationListener = new MyLocationListener();
     public static double latitude, longitude;
     private boolean isFirstLocation = true;
+    //初次定位坐标
+    private LatLng center;
     //顶部搜索框
     private PoiSearch mPoiSearch = null;
     private SuggestionSearch mSuggestionSearch = null;
@@ -63,24 +73,25 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
     private AppCompatAutoCompleteTextView keyWorldsView = null;
     private ArrayAdapter<String> sugAdapter = null;
     //目的地经纬度
-    public static LatLng endlatLng=null;
-    GeoCoder mSearch = null; // 搜索模块，也可去掉地图模块独立使用
-    int searchType = 0;  // 搜索的类型，在显示时区分
+    public static LatLng endlatLng = null;
+    private int loadIndex = 0;
 
+    //开始导航的底部对话框
+    int mWidth;
+    //搜索半径
+    int radius = 100;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getActivity().getApplicationContext());
-//        MapView.setMapCustomEnable(true);
-//        setMapCustomFile();
+        MapView.setMapCustomEnable(true);
+        setMapCustomFile();
     }
-
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
         //引用创建好的xml布局
         View view = inflater.inflate(R.layout.home_fragment, container, false);
         mMapView = (MapView) view.findViewById(R.id.bmapView);
@@ -88,9 +99,9 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         //自定义个性化地图
         MapView.setMapCustomEnable(true);
         initMap();
-//        // 初始化搜索模块，注册搜索事件监听
-//        mPoiSearch = PoiSearch.newInstance();
-//        mPoiSearch.setOnGetPoiSearchResultListener(this);
+        // 初始化搜索模块，注册搜索事件监听
+        mPoiSearch = PoiSearch.newInstance();
+        mPoiSearch.setOnGetPoiSearchResultListener(this);
         //建议搜索相关
         mSuggestionSearch = SuggestionSearch.newInstance();
         mSuggestionSearch.setOnGetSuggestionResultListener(this);
@@ -115,8 +126,6 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
                                 .keyword(cs.toString()).city("福州"));
             }
         });
-        mSearch = GeoCoder.newInstance();
-        mSearch.setOnGetGeoCodeResultListener(this);
         keyWorldsView.setOnItemClickListener(new MyOnItemClickListener());
         return view;
     }
@@ -126,6 +135,8 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
         mMapView.onDestroy();
+        mPoiSearch.destroy();
+        mSuggestionSearch.destroy();
     }
 
     @Override
@@ -133,7 +144,7 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         super.onResume();
         //在activity执行onResume时执行mMapView. onResume ()，实现地图生命周期管理
         mMapView.onResume();
-    }
+}
 
     @Override
     public void onPause() {
@@ -141,6 +152,7 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         //在activity执行onPause时执行mMapView. onPause ()，实现地图生命周期管理
         mMapView.onPause();
     }
+
 
     //地图定位相关
     private void initMap() {
@@ -156,8 +168,9 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         option.setScanSpan(1000);
         mLocationClient.setLocOption(option);
         mLocationClient.start();
-        mMapView. showZoomControls(false);
-        mMapView.getChildAt(1).setVisibility(View.INVISIBLE);         ;
+        mMapView.showZoomControls(false);
+        mMapView.getChildAt(1).setVisibility(View.INVISIBLE);
+
     }
 
     //地图改变监听事件
@@ -165,9 +178,9 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         @Override
         public void onReceiveLocation(BDLocation location) {
             // map view 销毁后不在处理新接收的位置
-            if (location == null || mMapView == null){
+            if (location == null || mMapView == null) {
                 return;
-        }
+            }
             // 将获取的location信息给百度map
             MyLocationData data = new MyLocationData.Builder().accuracy(0)// location.getRadius()
                     // 此处设置开发者获取到的方向信息，顺时针0-360
@@ -176,16 +189,13 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
             if (isFirstLocation) {
                 isFirstLocation = false;
                 // 获取经纬度
-                LatLng center = new LatLng(location.getLatitude(), location.getLongitude());
-                MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(center,12);
+                center = new LatLng(location.getLatitude(), location.getLongitude());
+                MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(center, 17);
                 mBaiduMap.animateMapStatus(status);// 动画的方式到中间
                 latitude = location.getLatitude();    //获取纬度信息
                 longitude = location.getLongitude();    //获取经度信息
             }
-
-
         }
-
     }
 
     //设置个性化地图
@@ -228,6 +238,28 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
+    }
+
+    public void onGetPoiDetailResult(PoiDetailResult result) {
+        if (result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Toast.makeText(getActivity(), "抱歉，未找到结果", Toast.LENGTH_SHORT)
+                    .show();
+        } else {
+            DisplayMetrics dm = new DisplayMetrics();
+            getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
+            mWidth = dm.widthPixels;
+            DialogUtil.showItemSelectDialog(getActivity(), mWidth
+                    , onIllegalListener
+                    , result.getName()
+                    , "开始骑行"
+                    , "预计花费24分钟"
+            );//可填添加任意多个Item呦
+
+
+        }
+    }
 
     //重写建议搜索结果
     @Override
@@ -241,52 +273,80 @@ public class HomeFragment extends Fragment implements OnGetGeoCoderResultListene
                 suggest.add(info.key);
             }
         }
-        sugAdapter = new ArrayAdapter<String>(getActivity(), R.layout.adapter_list_item,R.id.tv, suggest);
+        sugAdapter = new ArrayAdapter<String>(getActivity(), R.layout.adapter_list_item, R.id.tv, suggest);
         keyWorldsView.setAdapter(sugAdapter);
         sugAdapter.notifyDataSetChanged();
-        mSearch.geocode(new GeoCodeOption().city("福州").address( keyWorldsView.getText().toString()));
     }
 
-
-    //地理位置反编码
-    @Override
-    public void onGetGeoCodeResult(GeoCodeResult result) {
-        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-//            Toast.makeText(getActivity(), "抱歉，未能找到结果", Toast.LENGTH_LONG)
-//                    .show();
-            return;
-        }
-        endlatLng=new LatLng(result.getLocation().latitude,result.getLocation().longitude);
-
-
-    }
-//获取地理反编码后的选择地点的坐标
-    @Override
-    public void onGetReverseGeoCodeResult(ReverseGeoCodeResult result) {
-        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-
-            return;
-        }
-        endlatLng=new LatLng(result.getLocation().latitude,result.getLocation().longitude);
-
-    }
-
-    private class MyOnItemClickListener implements AdapterView.OnItemClickListener{
-        public void onItemClick(AdapterView<?>parent, View view,int poition,long id){
-            if(endlatLng!=null){
-                mBaiduMap.clear();
-                MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(endlatLng,17);
-                mBaiduMap.animateMapStatus(status);// 动画的方式到中间
-//                mBaiduMap.addOverlay(new MarkerOptions().position(endlatLng)
-//                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_location_on_black_24dp)));
-
-            }
-            Toast.makeText(getActivity(),"抱歉未转到相关地点",Toast.LENGTH_LONG).show();
+    //点击下拉菜单框的点击事件
+    private class MyOnItemClickListener implements AdapterView.OnItemClickListener {
+        public void onItemClick(AdapterView<?> parent, View view, int poition, long id) {
+            PoiNearbySearchOption nearbySearchOption = new PoiNearbySearchOption().keyword(keyWorldsView.getText()
+                    .toString()).sortType(PoiSortType.distance_from_near_to_far).location(center)
+                    .radius(radius).pageNum(loadIndex);
+            mPoiSearch.searchNearby(nearbySearchOption);
         }
     }
+
 
     //自定义的Adapter
+    public void onGetPoiResult(PoiResult result) {
+        if (result == null || result.error == SearchResult.ERRORNO.RESULT_NOT_FOUND) {
+            Toast.makeText(getActivity(), "未找到结果", Toast.LENGTH_LONG)
+                    .show();
+            return;
+        }
+        if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+            mBaiduMap.clear();
+            PoiOverlay overlay = new MyPoiOverlay(mBaiduMap);
+            mBaiduMap.setOnMarkerClickListener(overlay);
+            overlay.setData(result);
+            overlay.addToMap();
+            overlay.zoomToSpan();
+            return;
+        }
+        if (result.error == SearchResult.ERRORNO.AMBIGUOUS_KEYWORD) {
+
+            // 当输入关键字在本市没有找到，但在其他城市找到时，返回包含该关键字信息的城市列表
+            String strInfo = "在";
+            for (CityInfo cityInfo : result.getSuggestCityList()) {
+                strInfo += cityInfo.city;
+                strInfo += ",";
+            }
+            strInfo += "找到结果";
+            Toast.makeText(getActivity(), strInfo, Toast.LENGTH_LONG)
+                    .show();
+        }
+    }
 
 
+
+    private class MyPoiOverlay extends PoiOverlay {
+
+        public MyPoiOverlay(BaiduMap baiduMap) {
+            super(baiduMap);
+        }
+
+        @Override
+        public boolean onPoiClick(int index) {
+            super.onPoiClick(index);
+            PoiInfo poi = getPoiResult().getAllPoi().get(index);
+            // if (poi.hasCaterDetails) {
+            mPoiSearch.searchPoiDetail((new PoiDetailSearchOption())
+                    .poiUid(poi.uid));
+            // }
+            return true;
+        }
+    }
+
+
+
+    //底部导航框选择后的监听事件
+    private OnItemSelectedListener onIllegalListener = new OnItemSelectedListener() {
+        @Override
+        public void getSelectedItem(String content) {
+            Toast.makeText(getActivity(), content, Toast.LENGTH_SHORT).show();
+        }
+    };
 
 }
