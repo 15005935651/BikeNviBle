@@ -2,38 +2,38 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
 
-    <group android:id="@+id/grp1" android:checkableBehavior="single" >
+    <group  android:id="@+id/grp1">
         <item
-            android:id="@+id/navigation_item_1"
+            android:id="@+id/ofo"
             android:icon="@drawable/ic_arrow_forward_black_24dp"
             android:title="转到 ofo" />
-    </group>
+    </group >
 
-    <group android:id="@+id/grp2" android:checkableBehavior="single" >
+    <group  android:id="@+id/grp2" >
         <item
-            android:id="@+id/navigation_item_2"
+            android:id="@+id/mobai"
             android:icon="@drawable/ic_arrow_forward_black_24dp"
             android:title="转到摩拜" />
     </group>
 
-    <group android:id="@+id/grp3" android:checkableBehavior="single" >
+    <group  android:id="@+id/grp3" >
         <item
-            android:id="@+id/navigation_item_3"
+            android:id="@+id/bluetooth"
             android:icon="@drawable/ic_bluetooth_black_24dp"
             android:title="我的蓝牙" />
     </group>
 
 
-    <group android:id="@+id/grp4" android:checkableBehavior="single" >
+    <group  android:id="@+id/grp4">
         <item
-            android:id="@+id/navigation_item_4"
+            android:id="@+id/share"
             android:icon="@drawable/ic_menu_share"
             android:title="分享路线" />
     </group>
 
-    <group android:id="@+id/grp5" android:checkableBehavior="single" >
+    <group android:id="@+id/grp5" >
         <item
-            android:id="@+id/navigation_item_5"
+            android:id="@+id/about_us"
             android:icon="@drawable/ic_person_outline_black_24dp"
             android:title="关于我们" />
     </group>

@@ -12,11 +12,19 @@ import android.widget.Toast;
 import com.example.acer.control_class.DialogUtil;
 import com.example.acer.control_class.OnItemSelectedListener;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity{
+    //底部地图导航框的宽度
     int mWidth;
-    SearchView searchView;
+    FragmentManager fm = getFragmentManager();
+    FragmentTransaction tran = fm.beginTransaction();
+    HomeFragment f1=new HomeFragment();
+    MoreFragment f2=new MoreFragment();
+    //底部地图导航框里的数据
     private String[] items = {"福州大学旗山校区图书馆", "开始骑行", "预计花费24分钟"};
 
+
+    //底部导航栏里的监听
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -24,35 +32,15 @@ public class MainActivity extends AppCompatActivity {
         public boolean onNavigationItemSelected(MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.navigation_home:
-
-                    searchView.setVisibility(searchView.VISIBLE);
-                    //获取到FragmentManager，在V4包中通过getSupportFragmentManager，
-                    //在系统中原生的Fragment是通过getFragmentManager获得的。
-                    FragmentManager FM = getFragmentManager();
-                    //2.开启一个事务，通过调用beginTransaction方法开启。
-                    FragmentTransaction MfragmentTransaction =FM.beginTransaction();
-                    //把自己创建好的fragment创建一个对象
-                    HomeFragment  f1 = new HomeFragment();
-                    //向容器内加入Fragment，一般使用add或者replace方法实现，需要传入容器的id和Fragment的实例。
-                    MfragmentTransaction.add(R.id.message,f1);
-                    //提交事务，调用commit方法提交。
-                    MfragmentTransaction.commit();
+                    FragmentManager fm_1 = getFragmentManager();
+                    FragmentTransaction tran_0 = fm_1.beginTransaction();
+                    tran_0.show(f1).hide(f2).commit();
                     return true;
                 case R.id.navigation_dashboard:
-
-                    searchView.setVisibility(searchView.GONE);
-                    //获取到FragmentManager，在V4包中通过getSupportFragmentManager，
-                    //在系统中原生的Fragment是通过getFragmentManager获得的。
-                    FragmentManager FMs = getFragmentManager();
-                    //2.开启一个事务，通过调用beginTransaction方法开启。
-                    FragmentTransaction MfragmentTransactions = FMs.beginTransaction();
-                    //把自己创建好的fragment创建一个对象
-                    MoreFragment f2 = new MoreFragment();
-                    //向容器内加入Fragment，一般使用add或者replace方法实现，需要传入容器的id和Fragment的实例。
-                    MfragmentTransactions.replace(R.id.message,f2);
-                    //提交事务，调用commit方法提交。
-                    MfragmentTransactions.commit();
-
+                  //  searchView.setVisibility(searchView.GONE);
+                    FragmentManager fm_2 = getFragmentManager();
+                    FragmentTransaction tran_1 = fm_2.beginTransaction();
+                    tran_1.show(f2).hide(f1).commit();
                     return true;
             }
             return false;
@@ -64,41 +52,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
-        searchView=(SearchView)findViewById(R.id.search);
-
-
-
-
-        FragmentManager FM = getFragmentManager();
-        FragmentTransaction MfragmentTransaction =FM.beginTransaction();
-        HomeFragment  f1 = new HomeFragment();
-        MfragmentTransaction.replace(R.id.message,f1);
-        MfragmentTransaction.commit();
-        initData();
-        showDialog();
+        //初始化程序所有数据
+        initAll();
     }
 
 
-    private void initData() {
+
+    //用来初始化程序的所有数据
+    private void initAll() {
+        //初始化界面里的控件
+        initControl();
+        //初始化主界面fragment里的地图控件
+        initHomeFragment();
+    }
+
+
+    //用来初始化底部导航框里的数据
+    private void initNviDialogData() {
         DisplayMetrics dm = new DisplayMetrics();
         this.getWindowManager().getDefaultDisplay().getMetrics(dm);
         mWidth = dm.widthPixels;
     }
 
-
-    private void showDialog() {
-
+    //用来显示底部导航框的数据
+    private void showNviDialog() {
         DialogUtil.showItemSelectDialog(MainActivity.this, mWidth
                 , onIllegalListener
                 , "福州大学旗山校区图书馆"
                 , "开始骑行"
                 , "预计花费24分钟"
-                );//可填添加任意多个Item呦
+        );//可填添加任意多个Item呦
     }
 
+
+    //底部导航框选择后的监听事件
     private OnItemSelectedListener onIllegalListener = new OnItemSelectedListener() {
         @Override
         public void getSelectedItem(String content) {
@@ -106,6 +93,21 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
+    //初始化各种控件的数据
+    private void initControl() {
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+    }
+
+
+    //初始化打开界面主页的fragment布局
+    private void initHomeFragment() {
+//        initNviDialogData();
+//        showNviDialog();
+        tran.add(R.id.message, f1, "index").show(f1).add(R.id.message, f2, "bill").hide(f2);
+        tran.commit();
+    }
 
 
 }

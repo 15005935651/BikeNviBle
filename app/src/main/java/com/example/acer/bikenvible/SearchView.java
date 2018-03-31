@@ -6,11 +6,11 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.AppCompatAutoCompleteTextView;
 import android.util.AttributeSet;
 
 
-public class SearchView extends AppCompatEditText {
+public class SearchView extends AppCompatAutoCompleteTextView {
 
     private float searchSize = 0;
     private float textSize = 0;
