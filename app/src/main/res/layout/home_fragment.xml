@@ -22,6 +22,7 @@
         android:imeOptions="actionSearch"
         android:dropDownVerticalOffset="8.0dip"
         android:popupBackground="@color/colorPrimary"
+
         />
 
 

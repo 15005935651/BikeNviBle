@@ -81,6 +81,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     //搜索半径
     int radius = 100;
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -195,6 +196,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 latitude = location.getLatitude();    //获取纬度信息
                 longitude = location.getLongitude();    //获取经度信息
             }
+
         }
     }
 
@@ -278,7 +280,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         sugAdapter.notifyDataSetChanged();
     }
 
-    //点击下拉菜单框的点击事件
+    //点击下拉菜单框的点击事件进行附近poi检索
     private class MyOnItemClickListener implements AdapterView.OnItemClickListener {
         public void onItemClick(AdapterView<?> parent, View view, int poition, long id) {
             PoiNearbySearchOption nearbySearchOption = new PoiNearbySearchOption().keyword(keyWorldsView.getText()
@@ -289,7 +291,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     }
 
 
-    //自定义的Adapter
+    //POI检索相关
     public void onGetPoiResult(PoiResult result) {
         if (result == null || result.error == SearchResult.ERRORNO.RESULT_NOT_FOUND) {
             Toast.makeText(getActivity(), "未找到结果", Toast.LENGTH_LONG)
@@ -320,7 +322,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     }
 
 
-
+    //画检索出来的兴趣点
     private class MyPoiOverlay extends PoiOverlay {
 
         public MyPoiOverlay(BaiduMap baiduMap) {
