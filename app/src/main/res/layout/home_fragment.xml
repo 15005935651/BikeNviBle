@@ -21,7 +21,7 @@
         android:layout_marginBottom="@dimen/search_bottom"
         android:imeOptions="actionSearch"
         android:dropDownVerticalOffset="8.0dip"
-        android:popupBackground="@color/colorPrimary"
+        android:popupBackground="@color/transparent_color"
 
         />
 

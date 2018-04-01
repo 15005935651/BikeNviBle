@@ -1,11 +1,19 @@
 package com.example.acer.bikenvible;
 
+import android.Manifest;
 import android.app.Fragment;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatAutoCompleteTextView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +26,11 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.SDKInitializer;
+import com.baidu.mapapi.bikenavi.BikeNavigateHelper;
+import com.baidu.mapapi.bikenavi.adapter.IBEngineInitListener;
+import com.baidu.mapapi.bikenavi.adapter.IBRoutePlanListener;
+import com.baidu.mapapi.bikenavi.model.BikeRoutePlanError;
+import com.baidu.mapapi.bikenavi.params.BikeNaviLaunchParam;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
@@ -39,6 +52,7 @@ import com.baidu.mapapi.search.sug.OnGetSuggestionResultListener;
 import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
+import com.example.acer.bike_navi_class.BNaviGuideActivity;
 import com.example.acer.control_class.DialogUtil;
 import com.example.acer.control_class.OnItemSelectedListener;
 
@@ -48,8 +62,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-
 
 
 /**
@@ -65,6 +77,8 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     private boolean isFirstLocation = true;
     //初次定位坐标
     private LatLng center;
+    //定位的城市
+    private String city="福州";
     //顶部搜索框
     private PoiSearch mPoiSearch = null;
     private SuggestionSearch mSuggestionSearch = null;
@@ -80,7 +94,11 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     int mWidth;
     //搜索半径
     int radius = 100;
-
+    //单车导航相关
+    private LatLng startPt,endPt;
+    private BikeNavigateHelper mNaviHelper;
+    BikeNaviLaunchParam param;
+    private static boolean isPermissionRequested = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -88,6 +106,8 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         SDKInitializer.initialize(getActivity().getApplicationContext());
         MapView.setMapCustomEnable(true);
         setMapCustomFile();
+        //单车导航
+        requestPermission();
     }
 
 
@@ -124,7 +144,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 }
                 mSuggestionSearch
                         .requestSuggestion((new SuggestionSearchOption())
-                                .keyword(cs.toString()).city("福州"));
+                                .keyword(cs.toString()).city(city));
             }
         });
         keyWorldsView.setOnItemClickListener(new MyOnItemClickListener());
@@ -191,6 +211,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 isFirstLocation = false;
                 // 获取经纬度
                 center = new LatLng(location.getLatitude(), location.getLongitude());
+                startPt=new LatLng(location.getLatitude(), location.getLongitude());
                 MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(center, 17);
                 mBaiduMap.animateMapStatus(status);// 动画的方式到中间
                 latitude = location.getLatitude();    //获取纬度信息
@@ -252,6 +273,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             DisplayMetrics dm = new DisplayMetrics();
             getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
             mWidth = dm.widthPixels;
+            endPt=result.getLocation();
             DialogUtil.showItemSelectDialog(getActivity(), mWidth
                     , onIllegalListener
                     , result.getName()
@@ -347,8 +369,88 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     private OnItemSelectedListener onIllegalListener = new OnItemSelectedListener() {
         @Override
         public void getSelectedItem(String content) {
-            Toast.makeText(getActivity(), content, Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder builder=new AlertDialog.Builder(getActivity());
+            builder.setMessage("是否连接蓝牙设备进行骑行导航");
+            builder.setPositiveButton("确定",null);
+            builder.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface arg0, int arg1) {
+                    try {
+                        mNaviHelper = BikeNavigateHelper.getInstance();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    startBikeNavi();
+                    param = new BikeNaviLaunchParam().stPt(startPt).endPt(endPt);
+                }
+            });
+            builder.show();
         }
     };
 
+
+    //单车导航相关
+    private void requestPermission() {
+        if (Build.VERSION.SDK_INT >= 23 && !isPermissionRequested) {
+
+            isPermissionRequested = true;
+
+            ArrayList<String> permissions = new ArrayList<>();
+            int flag = ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION);
+            if (flag != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+
+            if (permissions.size() == 0) {
+                return;
+            } else {
+                requestPermissions(permissions.toArray(new String[permissions.size()]), 0);
+            }
+        }
+    }
+
+    //单车导航相关
+    private void startBikeNavi() {
+        Log.d("View", "startBikeNavi");
+        try {
+            mNaviHelper.initNaviEngine(getActivity(), new IBEngineInitListener() {
+                @Override
+                public void engineInitSuccess() {
+                    Log.d("View", "engineInitSuccess");
+                    routePlanWithParam();
+                }
+
+                @Override
+                public void engineInitFail() {
+                    Log.d("View", "engineInitFail");
+                }
+            });
+        } catch (Exception e) {
+            Log.d("Exception", "startBikeNavi");
+            e.printStackTrace();
+        }
+    }
+    //单车导航路线规划
+    private void routePlanWithParam() {
+        mNaviHelper.routePlanWithParams(param, new IBRoutePlanListener() {
+            @Override
+            public void onRoutePlanStart() {
+                Log.d("View", "onRoutePlanStart");
+            }
+
+            @Override
+            public void onRoutePlanSuccess() {
+                Log.d("View", "onRoutePlanSuccess");
+                Intent intent = new Intent();
+                intent.setClass(getActivity(), BNaviGuideActivity.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onRoutePlanFail(BikeRoutePlanError error) {
+                Log.d("View", "onRoutePlanFail");
+            }
+
+        });
+    }
 }
