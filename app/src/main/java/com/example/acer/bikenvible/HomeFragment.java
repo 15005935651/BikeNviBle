@@ -2,6 +2,8 @@ package com.example.acer.bikenvible;
 
 import android.Manifest;
 import android.app.Fragment;
+import android.app.ProgressDialog;
+import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.baidu.location.BDLocation;
@@ -53,8 +56,12 @@ import com.baidu.mapapi.search.sug.SuggestionResult;
 import com.baidu.mapapi.search.sug.SuggestionSearch;
 import com.baidu.mapapi.search.sug.SuggestionSearchOption;
 import com.example.acer.bike_navi_class.BNaviGuideActivity;
+import com.example.acer.bikenvible.adapter.DeviceListAdapter;
 import com.example.acer.control_class.DialogUtil;
 import com.example.acer.control_class.OnItemSelectedListener;
+import com.hansion.h_ble.BleController;
+import com.hansion.h_ble.callback.ConnectCallback;
+import com.hansion.h_ble.callback.ScanCallback;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -78,7 +85,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     //初次定位坐标
     private LatLng center;
     //定位的城市
-    private String city="福州";
+    private String city = "福州";
     //顶部搜索框
     private PoiSearch mPoiSearch = null;
     private SuggestionSearch mSuggestionSearch = null;
@@ -95,10 +102,18 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     //搜索半径
     int radius = 100;
     //单车导航相关
-    private LatLng startPt,endPt;
+    private LatLng startPt, endPt;
     private BikeNavigateHelper mNaviHelper;
     BikeNaviLaunchParam param;
     private static boolean isPermissionRequested = false;
+
+    //蓝牙搜索模块
+    private BleController mBleController;
+    private List<BluetoothDevice> bluetoothDevices = new ArrayList<BluetoothDevice>();
+    private ListView mDeviceList;
+    private ProgressDialog progressDialog;
+    private View BluetoothItemDialog;
+    private AlertDialog parkIdsdialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -108,6 +123,10 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         setMapCustomFile();
         //单车导航
         requestPermission();
+
+        // TODO  第一步：初始化
+        mBleController = BleController.getInstance().init(getActivity());
+
     }
 
 
@@ -132,10 +151,12 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             public void afterTextChanged(Editable arg0) {
 
             }
+
             @Override
             public void beforeTextChanged(CharSequence arg0, int arg1,
                                           int arg2, int arg3) {
             }
+
             @Override
             public void onTextChanged(CharSequence cs, int arg1, int arg2,
                                       int arg3) {
@@ -148,6 +169,10 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             }
         });
         keyWorldsView.setOnItemClickListener(new MyOnItemClickListener());
+
+        //初始化蓝牙连接模块
+        BluetoothItemDialog = View.inflate(getActivity(), R.layout.bluetooh_list_dialog, null);//填充ListView布局
+        mDeviceList = (ListView) BluetoothItemDialog.findViewById(R.id.mDeviceList1);//初始化ListView控件
         return view;
     }
 
@@ -158,6 +183,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         mMapView.onDestroy();
         mPoiSearch.destroy();
         mSuggestionSearch.destroy();
+        hideProgressDialog();
     }
 
     @Override
@@ -165,7 +191,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         super.onResume();
         //在activity执行onResume时执行mMapView. onResume ()，实现地图生命周期管理
         mMapView.onResume();
-}
+    }
 
     @Override
     public void onPause() {
@@ -211,7 +237,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 isFirstLocation = false;
                 // 获取经纬度
                 center = new LatLng(location.getLatitude(), location.getLongitude());
-                startPt=new LatLng(location.getLatitude(), location.getLongitude());
+                startPt = new LatLng(location.getLatitude(), location.getLongitude());
                 MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(center, 17);
                 mBaiduMap.animateMapStatus(status);// 动画的方式到中间
                 latitude = location.getLatitude();    //获取纬度信息
@@ -273,14 +299,13 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             DisplayMetrics dm = new DisplayMetrics();
             getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
             mWidth = dm.widthPixels;
-            endPt=result.getLocation();
+            endPt = result.getLocation();
             DialogUtil.showItemSelectDialog(getActivity(), mWidth
                     , onIllegalListener
                     , result.getName()
+                    , "蓝牙设备骑行"
                     , "开始骑行"
-                    , "预计花费24分钟"
             );//可填添加任意多个Item呦
-
 
         }
     }
@@ -355,36 +380,31 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         public boolean onPoiClick(int index) {
             super.onPoiClick(index);
             PoiInfo poi = getPoiResult().getAllPoi().get(index);
-            // if (poi.hasCaterDetails) {
             mPoiSearch.searchPoiDetail((new PoiDetailSearchOption())
                     .poiUid(poi.uid));
-            // }
             return true;
         }
     }
-
 
 
     //底部导航框选择后的监听事件
     private OnItemSelectedListener onIllegalListener = new OnItemSelectedListener() {
         @Override
         public void getSelectedItem(String content) {
-            AlertDialog.Builder builder=new AlertDialog.Builder(getActivity());
-            builder.setMessage("是否连接蓝牙设备进行骑行导航");
-            builder.setPositiveButton("确定",null);
-            builder.setNegativeButton("取消",new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface arg0, int arg1) {
-                    try {
-                        mNaviHelper = BikeNavigateHelper.getInstance();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    startBikeNavi();
-                    param = new BikeNaviLaunchParam().stPt(startPt).endPt(endPt);
+            if (content.equals("蓝牙设备骑行")) {
+                scanDevices();
+            }
+            if (content.equals("开始骑行")) {
+                try {
+                    mNaviHelper = BikeNavigateHelper.getInstance();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            });
-            builder.show();
+                startBikeNavi();
+                param = new BikeNaviLaunchParam().stPt(startPt).endPt(endPt);
+            }
+
         }
     };
 
@@ -430,6 +450,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             e.printStackTrace();
         }
     }
+
     //单车导航路线规划
     private void routePlanWithParam() {
         mNaviHelper.routePlanWithParams(param, new IBRoutePlanListener() {
@@ -453,4 +474,91 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
 
         });
     }
+
+    //蓝牙搜索
+    private void scanDevices() {
+
+        showProgressDialog("请稍后", "正在搜索设备");
+
+        mBleController.scanBle(0, new ScanCallback() {
+            @Override
+            public void onSuccess() {
+                hideProgressDialog();
+                if (bluetoothDevices.size() > 0) {
+                    mDeviceList.setAdapter(new DeviceListAdapter(getActivity(), bluetoothDevices));
+                    parkIdsdialog = new AlertDialog.Builder(getActivity())
+                            .setTitle("选择蓝牙设备").setView(BluetoothItemDialog)
+                            .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    parkIdsdialog.cancel();
+                                }
+                            }).create();
+                    parkIdsdialog.show();
+                    mDeviceList.setOnItemClickListener(new BlueItemItemOnClickListener());
+                } else {
+                    Toast.makeText(getActivity(), "未搜索到Ble设备", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onScanning(BluetoothDevice device, int rssi, byte[] scanRecord) {
+                if (!bluetoothDevices.contains(device)) {
+                    bluetoothDevices.add(device);
+                }
+            }
+        });
+    }
+
+    //蓝牙搜索框
+    public void showProgressDialog(String title, String message) {
+        if (progressDialog == null) {
+            progressDialog = ProgressDialog.show(getActivity(), title, message, true, false);
+        } else if (progressDialog.isShowing()) {
+            progressDialog.setTitle(title);
+            progressDialog.setMessage(message);
+        }
+        progressDialog.show();
+    }
+
+    public void hideProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.cancel();
+            progressDialog = null;
+        }
+    }
+
+
+    private class BlueItemItemOnClickListener implements AdapterView.OnItemClickListener {
+        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            parkIdsdialog.cancel();
+            showProgressDialog("请稍后", "正在连接设备");
+
+            // TODO 第三步：点击条目后,获取地址，根据地址连接设备
+            String address = bluetoothDevices.get(i).getAddress();
+            mBleController.connect(0, address, new ConnectCallback() {
+                @Override
+                public void onConnSuccess() {
+                    parkIdsdialog.cancel();
+                    hideProgressDialog();
+                    Toast.makeText(getActivity(), "连接成功,开始骑行", Toast.LENGTH_SHORT).show();
+                    try {
+                        mNaviHelper = BikeNavigateHelper.getInstance();
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    startBikeNavi();
+                    param = new BikeNaviLaunchParam().stPt(startPt).endPt(endPt);
+                }
+
+                @Override
+                public void onConnFailed() {
+                    hideProgressDialog();
+                    Toast.makeText(getActivity(), "连接超时，请重试", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
 }
