@@ -85,7 +85,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     //初次定位坐标
     private LatLng center;
     //定位的城市
-    private String city = "福州";
+    private String Mycity = null;
     //顶部搜索框
     private PoiSearch mPoiSearch = null;
     private SuggestionSearch mSuggestionSearch = null;
@@ -99,7 +99,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
 
     //开始导航的底部对话框
     int mWidth;
-    //搜索半径
+    //搜索半径(一般骑行最高10公里左右）
     int radius = 100;
     //单车导航相关
     private LatLng startPt, endPt;
@@ -165,7 +165,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 }
                 mSuggestionSearch
                         .requestSuggestion((new SuggestionSearchOption())
-                                .keyword(cs.toString()).city(city));
+                                .keyword(cs.toString()).city(Mycity));
             }
         });
         keyWorldsView.setOnItemClickListener(new MyOnItemClickListener());
@@ -210,6 +210,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         mLocationClient = new LocationClient(getActivity().getApplicationContext());
         mLocationClient.registerLocationListener(mLocationListener);
         LocationClientOption option = new LocationClientOption();
+        option.setIsNeedAddress(true);
         option.setOpenGps(true); // 打开gps
         option.setCoorType("bd09ll"); // 设置坐标类型
         option.setScanSpan(1000);
@@ -240,6 +241,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                 startPt = new LatLng(location.getLatitude(), location.getLongitude());
                 MapStatusUpdate status = MapStatusUpdateFactory.newLatLngZoom(center, 17);
                 mBaiduMap.animateMapStatus(status);// 动画的方式到中间
+                Mycity = location.getCity();
                 latitude = location.getLatitude();    //获取纬度信息
                 longitude = location.getLongitude();    //获取经度信息
             }
@@ -494,6 +496,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                                     parkIdsdialog.cancel();
                                 }
                             }).create();
+                    parkIdsdialog.setCanceledOnTouchOutside(false);//使除了dialog以外的地方不能被点击
                     parkIdsdialog.show();
                     mDeviceList.setOnItemClickListener(new BlueItemItemOnClickListener());
                 } else {
@@ -530,7 +533,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
 
 
     private class BlueItemItemOnClickListener implements AdapterView.OnItemClickListener {
-        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+        public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
             parkIdsdialog.cancel();
             showProgressDialog("请稍后", "正在连接设备");
 
@@ -542,6 +545,9 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                     parkIdsdialog.cancel();
                     hideProgressDialog();
                     Toast.makeText(getActivity(), "连接成功,开始骑行", Toast.LENGTH_SHORT).show();
+//                    Intent intent=new Intent(getActivity(),BNaviGuideActivity.class);
+//                    intent.putExtra("mBleController",mBleController);
+
                     try {
                         mNaviHelper = BikeNavigateHelper.getInstance();
 
@@ -551,6 +557,7 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
                     startBikeNavi();
                     param = new BikeNaviLaunchParam().stPt(startPt).endPt(endPt);
                 }
+
 
                 @Override
                 public void onConnFailed() {

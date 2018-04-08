@@ -19,6 +19,7 @@ import com.baidu.mapapi.bikenavi.model.BikeRouteDetailInfo;
 import com.baidu.mapapi.bikenavi.model.RouteGuideKind;
 import com.baidu.mapapi.bikenavi.params.BikeNaviLaunchParam;
 import com.hansion.h_ble.BleController;
+import com.hansion.h_ble.callback.OnWriteCallback;
 
 public class BNaviGuideActivity extends Activity {
     private BleController mBleController;
@@ -59,27 +60,28 @@ public class BNaviGuideActivity extends Activity {
             }
         });
 
-//        mBleController = BleController.getInstance().init(this);
-//        String[] s = {"hello", "go start", "turn right", "turn left", "care for", "speed 3m/s"};
-//        try {
-//            for (int i = 0; i < s.length; i++) {
-//                Thread.currentThread().sleep(2000);
-//                mBleController.writeBuffer(s[i].getBytes(), new OnWriteCallback() {
-//                    @Override
-//                    public void onSuccess() {
-//
-//                    }
-//
-//                    @Override
-//                    public void onFailed(int state) {
-//
-//                    }
-//                });
-//            }
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mBleController=BleController.getInstance().init(BNaviGuideActivity.this);
+                    String[] s = {"hello1", "go start", "turn right","turn left", "care for", "speed 3m/s"};
+                    for(int i=0;i<s.length;i++){
+                        mBleController.writeBuffer(s[i].getBytes(), new OnWriteCallback() {
+                            @Override
+                            public void onSuccess() {
+                            }
+                            @Override
+                            public void onFailed(int state) {
+                            }
+                        });
+                        Thread.sleep(3000);//休眠5秒
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 
         //获取导航途中的诱导信息
         mNaviHelper.setRouteGuidanceListener(this, new IBRouteGuidanceListener() {

@@ -1,6 +1,7 @@
 package com.example.acer.bikenvible;
 
 import android.app.Fragment;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -11,6 +12,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Created by acer on 2018/3/22.
@@ -47,11 +52,11 @@ public class MoreFragment extends Fragment implements NavigationView.OnNavigatio
             //打开摩拜单车
             Open_App("com.mobike.mobikeapp");
         } else if (id == R.id.bluetooth) {
-
+            show_my_bluetooh_dialog();
         } else if (id == R.id.share) {
 
         } else if (id == R.id.about_us) {
-
+            show_about_us_dialog();
         }
         return true;
     }
@@ -73,7 +78,47 @@ public class MoreFragment extends Fragment implements NavigationView.OnNavigatio
         }
     }
 
+    private void show_about_us_dialog(){
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("邮箱");
+        builder.setMessage("\n804052545@qq.com");
+        builder.setPositiveButton("确定", null);
+        builder.show();
+    }
+    private void show_my_bluetooh_dialog() {
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("Mac地址");
+        builder.setMessage("\n"+getBtAddressByReflection());
+        builder.setPositiveButton("确定", null);
+        builder.show();
+    }
 
-
-
+    public static String getBtAddressByReflection() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        Field field = null;
+        try {
+            field = BluetoothAdapter.class.getDeclaredField("mService");
+            field.setAccessible(true);
+            Object bluetoothManagerService = field.get(bluetoothAdapter);
+            if (bluetoothManagerService == null) {
+                return null;
+            }
+            Method method = bluetoothManagerService.getClass().getMethod("getAddress");
+            if(method != null) {
+                Object obj = method.invoke(bluetoothManagerService);
+                if(obj != null) {
+                    return obj.toString();
+                }
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

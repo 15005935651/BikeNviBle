@@ -48,7 +48,7 @@ public class DeviceListAdapter extends BaseAdapter {
                 getViewHolder(mContext, convertView, viewGroup, R.layout.item_device_list, position);
         TextView name = holder.getView(R.id.mDeviceName);
       //  TextView address = holder.getView(R.id.mDeviceMacAddress);
-        name.setText(bluetoothDevices.get(position).getName());
+        name.setText(bluetoothDevices.get(position).getName()+"\n"+"("+bluetoothDevices.get(position).getAddress()+")");
       //  address.setText(bluetoothDevices.get(position).getAddress());
         return holder.getConvertView();
     }
