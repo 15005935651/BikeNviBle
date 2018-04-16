@@ -21,6 +21,7 @@ import com.hansion.h_ble.callback.OnWriteCallback;
 import com.hansion.h_ble.callback.ScanCallback;
 import com.hansion.h_ble.request.ReceiverRequestQueue;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,7 +35,7 @@ import java.util.UUID;
  * Author: Hansion  www.hansion.win
  * Time: 2017/2/13 9:43
  */
-public class BleController {
+public class BleController implements Serializable {
 
     private static String LOGTAG = "H_Ble_Lib --> ";
 

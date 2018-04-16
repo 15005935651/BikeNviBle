@@ -54,7 +54,7 @@ public class MoreFragment extends Fragment implements NavigationView.OnNavigatio
         } else if (id == R.id.bluetooth) {
             show_my_bluetooh_dialog();
         } else if (id == R.id.share) {
-
+            share();
         } else if (id == R.id.about_us) {
             show_about_us_dialog();
         }
@@ -120,5 +120,12 @@ public class MoreFragment extends Fragment implements NavigationView.OnNavigatio
             e.printStackTrace();
         }
         return null;
+    }
+
+    public void share(){
+        Intent intent1=new Intent(Intent.ACTION_SEND);
+        intent1.putExtra(Intent.EXTRA_TEXT,"我在使用G-Watch骑行，加入我们！");
+        intent1.setType("text/plain");
+        startActivity(Intent.createChooser(intent1,"share"));
     }
 }

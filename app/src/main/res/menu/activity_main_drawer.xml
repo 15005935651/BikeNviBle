@@ -28,7 +28,7 @@
         <item
             android:id="@+id/share"
             android:icon="@drawable/ic_menu_share"
-            android:title="分享路线" />
+            android:title="分享应用" />
     </group>
 
     <group android:id="@+id/grp5" >

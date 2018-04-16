@@ -26,11 +26,14 @@ public class BNaviGuideActivity extends Activity {
     private BikeNavigateHelper mNaviHelper;
 
     BikeNaviLaunchParam param;
-
+    public static final String REQUESTKEY_SENDANDRECIVEACTIVITY = "BNaviGuideActivity";
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mNaviHelper.quit();
+        //移除接收数据的监听
+        mBleController.unregistReciveListener(REQUESTKEY_SENDANDRECIVEACTIVITY);
+        // TODO 断开连接
+        mBleController.closeBleConn();
     }
 
     @Override
@@ -65,8 +68,8 @@ public class BNaviGuideActivity extends Activity {
             public void run() {
                 try {
                     mBleController=BleController.getInstance().init(BNaviGuideActivity.this);
-                    String[] s = {"hello1", "go start", "turn right","turn left", "care for", "speed 3m/s"};
-                    for(int i=0;i<s.length;i++){
+                    String[] s = {"hello","1","2","3","a","b","c"};
+                    for(int i=0;i<=s.length;i++){
                         mBleController.writeBuffer(s[i].getBytes(), new OnWriteCallback() {
                             @Override
                             public void onSuccess() {

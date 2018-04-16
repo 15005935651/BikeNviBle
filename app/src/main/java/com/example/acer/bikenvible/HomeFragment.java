@@ -112,7 +112,6 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
     private List<BluetoothDevice> bluetoothDevices = new ArrayList<BluetoothDevice>();
     private ListView mDeviceList;
     private ProgressDialog progressDialog;
-    private View BluetoothItemDialog;
     private AlertDialog parkIdsdialog;
 
     @Override
@@ -170,9 +169,6 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
         });
         keyWorldsView.setOnItemClickListener(new MyOnItemClickListener());
 
-        //初始化蓝牙连接模块
-        BluetoothItemDialog = View.inflate(getActivity(), R.layout.bluetooh_list_dialog, null);//填充ListView布局
-        mDeviceList = (ListView) BluetoothItemDialog.findViewById(R.id.mDeviceList1);//初始化ListView控件
         return view;
     }
 
@@ -487,6 +483,9 @@ public class HomeFragment extends Fragment implements OnGetPoiSearchResultListen
             public void onSuccess() {
                 hideProgressDialog();
                 if (bluetoothDevices.size() > 0) {
+                    //初始化蓝牙连接模块
+                    View BluetoothItemDialog = View.inflate(getActivity(), R.layout.bluetooh_list_dialog, null);//填充ListView布局
+                    mDeviceList = (ListView) BluetoothItemDialog.findViewById(R.id.mDeviceList1);//初始化ListView控件
                     mDeviceList.setAdapter(new DeviceListAdapter(getActivity(), bluetoothDevices));
                     parkIdsdialog = new AlertDialog.Builder(getActivity())
                             .setTitle("选择蓝牙设备").setView(BluetoothItemDialog)
